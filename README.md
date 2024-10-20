@@ -23,17 +23,6 @@ See details like:
 * Simple keyboard shortcuts for route lookup and jumping to methods.
 * Displays routes in an intuitive table format inside VS Code.
 
-#### 🆚 Comparison with Other Tools
-
-| Feature                              | Laravel Controller Method Finder   | Other Laravel Route Tools |
-|--------------------------------------|------------------------------------|---------------------------|
-| Route List                           | Yes                                | No                        |
-| Route-to-Controller Mapping          | Yes                                | Partial                   |
-| Go to Controller Method (Exact Line) | Yes (Directs to exact method line) | No (Only opens file)      |
-| Supports Nested Controllers          | Yes                                | No                        |
-| Full Route Details (with Method)     | Yes                                | No                        |
-
-
 #### 🖥️ Installation
 
 * Open Visual Studio Code.

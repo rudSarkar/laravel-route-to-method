@@ -28,7 +28,11 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        const routes = findLaravelRoutesToController(routesPath, controllersPath);
+        // Get all route and controller files
+        const routeFiles = getAllPhpFiles(routesPath);
+        const controllerFiles = getAllPhpFiles(controllersPath);
+
+        const routes = findLaravelRoutesToController(routeFiles, controllerFiles);
         displayRoutes(routes);
     });
 
@@ -59,7 +63,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const controllersPath = path.join(workspaceFolder, 'app', 'Http', 'Controllers');
-        const controllerPath = findControllerFile(controllersPath, routeInfo.controllerName);
+        // Get all controller files
+        const controllerFiles = getAllPhpFiles(controllersPath); // Add this line
+        const controllerPath = findControllerFile(controllerFiles, routeInfo.controllerName); // Use the array
 
         if (controllerPath === 'Controller not found') {
             vscode.window.showErrorMessage(`Controller ${routeInfo.controllerName} not found.`);
@@ -81,7 +87,29 @@ export function activate(context: vscode.ExtensionContext) {
         editorInstance.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
     });
 
+
     context.subscriptions.push(disposable, goToControllerCommand);
+}
+
+// Utility function to get all .php files from a directory recursively
+function getAllPhpFiles(dirPath: string): string[] {
+    let results: string[] = [];
+
+    const files = fs.readdirSync(dirPath);
+    for (const file of files) {
+        const filePath = path.join(dirPath, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat.isDirectory()) {
+            // Recursively search this directory
+            results = results.concat(getAllPhpFiles(filePath));
+        } else if (file.endsWith('.php')) {
+            // Push only .php files
+            results.push(filePath);
+        }
+    }
+
+    return results;
 }
 
 interface RouteInfo {
@@ -94,27 +122,10 @@ interface RouteInfo {
 }
 
 // Search for a controller file in the specified directory
-function findControllerFile(controllersPath: string, controllerName: string): string {
+function findControllerFile(controllerFiles: string[], controllerName: string): string {
     const controllerFile = `${controllerName}.php`;
-    const results: string[] = [];
-
-    function searchDir(dirPath: string) {
-        const files = fs.readdirSync(dirPath);
-
-        for (const file of files) {
-            const filePath = path.join(dirPath, file);
-            const stat = fs.statSync(filePath);
-
-            if (stat.isDirectory()) {
-                searchDir(filePath);
-            } else if (file === controllerFile) {
-                results.push(filePath);
-            }
-        }
-    }
-
-    searchDir(controllersPath);
-    return results[0] || 'Controller not found';
+    const foundFile = controllerFiles.find(file => file.endsWith(controllerFile));
+    return foundFile || 'Controller not found';
 }
 
 // Find the method that is associated with the controller file
@@ -136,12 +147,10 @@ function findControllerMethod(controllerPath: string, methodName: string): strin
 }
 
 // Search for Laravel routes and map them to controller methods
-function findLaravelRoutesToController(routesPath: string, controllersPath: string): RouteInfo[] {
+function findLaravelRoutesToController(routeFiles: string[], controllerFiles: string[]): RouteInfo[] {
     const routes: RouteInfo[] = [];
-    const routeFiles = fs.readdirSync(routesPath).filter(file => file.endsWith('.php'));
 
-    for (const file of routeFiles) {
-        const filePath = path.join(routesPath, file);
+    for (const filePath of routeFiles) {
         const content = fs.readFileSync(filePath, 'utf-8');
 
         const routeRegex = /Route::(get|post|put|delete)\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^@'"]+)@([^'"]+)['"]\s*\)(?:->name\(['"]([^'"]+)['"]\))?/g;
@@ -150,7 +159,7 @@ function findLaravelRoutesToController(routesPath: string, controllersPath: stri
         while ((match = routeRegex.exec(content)) !== null) {
             const controllerName = match[3];
             const methodName = match[4];
-            const controllerFilePath = findControllerFile(controllersPath, controllerName);
+            const controllerFilePath = findControllerFile(controllerFiles, controllerName);
             const controllerMethod = findControllerMethod(controllerFilePath, methodName);
 
             routes.push({
@@ -211,7 +220,9 @@ function displayRoutes(routes: RouteInfo[]) {
         'laravelRoutes',
         'Laravel Routes to Controllers',
         vscode.ViewColumn.One,
-        {}
+        {
+            enableScripts: true,
+        }
     );
 
     const routesList = routes.map(route => `
@@ -230,19 +241,59 @@ function displayRoutes(routes: RouteInfo[]) {
         <html>
             <head>
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" integrity="sha512-jnSuA4Ss2PkkikSOLtYs8BlYIeeIK1h99ty4YfvRPAlzr377vr3CXDb7sb7eEEBYjDtcYj+AjBH3FLv5uSJuXg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <style>
+                    #searchInput {
+                        margin-bottom: 10px;
+                    }
+                </style>
             </head>
             <body>
-                <table class="table table-dark table-striped">
-                    <tr>
-                        <th>Route Name</th>
-                        <th>Controller</th>
-                        <th>Method</th>
-                        <th>Route File</th>
-                        <th>Controller File</th>
-                        <th>Method Location</th>
-                    </tr>
-                    ${routesList}
-                </table>
+                <div class="container">
+                    <h2 class="my-4">Laravel Routes to Controllers</h2>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search routes...">
+                    <table class="table table-dark table-striped mt-3">
+                        <thead>
+                            <tr>
+                                <th>Route Name</th>
+                                <th>Controller</th>
+                                <th>Method</th>
+                                <th>Route File</th>
+                                <th>Controller File</th>
+                                <th>Method Location</th>
+                            </tr>
+                        </thead>
+                        <tbody id="routesTable">
+                            ${routesList}
+                        </tbody>
+                    </table>
+                </div>
+
+                <script>
+                    const searchInput = document.getElementById('searchInput');
+                    const routesTable = document.getElementById('routesTable');
+                    const tableRows = routesTable.getElementsByTagName('tr');
+
+                    searchInput.addEventListener('keyup', function() {
+                        const searchValue = searchInput.value.toLowerCase();
+
+                        for (let i = 0; i < tableRows.length; i++) {
+                            const row = tableRows[i];
+                            const cells = row.getElementsByTagName('td');
+                            let match = false;
+
+                            for (let j = 0; j < cells.length; j++) {
+                                const cellValue = cells[j].textContent || cells[j].innerText;
+
+                                if (cellValue.toLowerCase().includes(searchValue)) {
+                                    match = true;
+                                    break;
+                                }
+                            }
+
+                            row.style.display = match ? '' : 'none';
+                        }
+                    });
+                </script>
             </body>
         </html>
     `;

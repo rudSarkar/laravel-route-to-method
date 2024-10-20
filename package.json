@@ -1,14 +1,25 @@
 {
-  "name": "laravelcontrollermethodfinder",
-  "displayName": "Laravel Controller Method Finder",
-  "description": "It will help to find the controller method with line from routes folder",
+  "name": "laravel-route-to-controller-method-finder",
+  "displayName": "Laravel route to controller method Finder",
+  "description": "It will help to find the controller method from line from route files",
   "version": "0.0.1",
+  "repository": "https://github.com/rudSarkar/laravel-route-to-method",
+  "publisher": "rudSarkar",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.94.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": [
+		"PHP",
+		"Laravel",
+		"Blade",
+		"View",
+		"Namespace",
+		"Controller"
+	],
   "activationEvents": [
     
   ],
