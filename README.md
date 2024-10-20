@@ -1,71 +1,63 @@
-# laravelroutetrack README
+# Laravel Controller Method Finder
 
-This is the README for your extension "laravelroutetrack". After writing up a brief description, we recommend including the following sections.
+A powerful Visual Studio Code extension to streamline Laravel development by allowing you to find routes and jump to controller methods with ease.
 
-## Features
+#### 🚀 Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+1. Find Laravel Routes
+Quickly generate a list of all your Laravel routes.
+See details like:
+* Route name
+* Controller name
+* Method name
+* Location of route file
+* Location of controller file
+* Exact method location
 
-For example if there is an image subfolder under your extension project workspace:
+2. Jump to Controller Method
+* Go directly to the line where the method is defined within the controller.
+* Avoid manually searching through large controller files.
+* Handles nested directories and finds the right controller file for you.
 
-\!\[feature X\]\(images/feature-x.png\)
+3. Fully Integrated with VS Code
+* Simple keyboard shortcuts for route lookup and jumping to methods.
+* Displays routes in an intuitive table format inside VS Code.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+#### 🆚 Comparison with Other Tools
 
-## Requirements
+| Feature                              | Laravel Controller Method Finder   | Other Laravel Route Tools |
+|--------------------------------------|------------------------------------|---------------------------|
+| Route List                           | Yes                                | No                        |
+| Route-to-Controller Mapping          | Yes                                | Partial                   |
+| Go to Controller Method (Exact Line) | Yes (Directs to exact method line) | No (Only opens file)      |
+| Supports Nested Controllers          | Yes                                | No                        |
+| Full Route Details (with Method)     | Yes                                | No                        |
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
 
-## Extension Settings
+#### 🖥️ Installation
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+* Open Visual Studio Code.
+* Go to Extensions (or press Ctrl+Shift+X).
+* Search for "Laravel Controller Method Finder" and click Install.
+* Reload your VS Code window.
 
-For example:
+Alternatively, you can install the extension from the VS Code marketplace by running:
 
-This extension contributes the following settings:
+```
+ext install laravelcontrollermethodfinder
+```
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+#### ⌨️ Keyboard Shortcuts
 
-## Known Issues
+* All Laravel Routes: `Ctrl + Alt + R` (Windows/Linux), `Cmd + Alt + R` (macOS)
+* Go to Controller Method: `Ctrl + Alt + G` (Windows/Linux), `Cmd + Alt + G` (macOS)
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+🎯 Usage
+1. Open any Laravel project in VS Code.
+2. Run the command "Find Laravel Routes to Controller" from the command palette or use the shortcut `Ctrl + Alt + R`.
+    * This will generate a table of routes mapped to controllers and methods.
+3. Click on any route or use the "Go to Controller Method" command (Ctrl + Alt + G) when inside a route file to jump directly to the corresponding controller method.
 
-## Release Notes
+#### 💻 Contributing
+We welcome contributions! Feel free to fork this repository and submit pull requests for bug fixes or new features.
 
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**

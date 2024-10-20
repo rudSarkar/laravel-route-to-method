@@ -18,8 +18,35 @@
       {
         "command": "laravelcontrollermethodfinder.findLaravelRoutesToController",
         "title": "Find Laravel Controller from routes"
+      },
+      {
+        "command": "laravelcontrollermethodfinder.goToController",
+        "title": "Go to controller method"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+          {
+            "when": "resourceFilename =~ /.*\\.php$/ && resourcePath =~ /.*[\\\\/]routes[\\\\/].*/",
+            "command": "laravelcontrollermethodfinder.goToController",
+            "group": "navigation"
+          }
+      ],
+      "keybindings": [
+        {
+          "command": "laravelcontrollermethodfinder.findLaravelRoutesToController",
+          "key": "ctrl+alt+r",
+          "mac": "cmd+alt+r",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "laravelcontrollermethodfinder.goToController",
+          "key": "ctrl+alt+g",
+          "mac": "cmd+alt+g",
+          "when": "editorTextFocus"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

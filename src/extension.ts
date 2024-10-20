@@ -3,8 +3,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export function activate(context: vscode.ExtensionContext) {
-    let disposable = vscode.commands.registerCommand('laravelcontrollermethodfinder.findLaravelRoutesToController', () => {
-        console.log("Working And Registerd")
+
+    // Registering command VSCode
+    const disposable = vscode.commands.registerCommand('laravelcontrollermethodfinder.findLaravelRoutesToController', () => {
+        console.log("Command registered and working");
+
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
             vscode.window.showErrorMessage('No workspace folder found');
@@ -29,7 +32,56 @@ export function activate(context: vscode.ExtensionContext) {
         displayRoutes(routes);
     });
 
-    context.subscriptions.push(disposable);
+    // Registering command for menu
+    const goToControllerCommand = vscode.commands.registerCommand('laravelcontrollermethodfinder.goToController', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
+
+        if (!isRouteFile(editor.document.fileName)) {
+            vscode.window.showErrorMessage('This command only works in Laravel route files.');
+            return;
+        }
+
+        // Parse the current line to extract route info
+        const lineText = editor.document.lineAt(editor.selection.active.line).text;
+        const routeInfo = parseRouteLine(lineText);
+
+        if (!routeInfo) {
+            vscode.window.showErrorMessage('No route definition found on this line.');
+            return;
+        }
+
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        if (!workspaceFolder) {
+            return;
+        }
+
+        const controllersPath = path.join(workspaceFolder, 'app', 'Http', 'Controllers');
+        const controllerPath = findControllerFile(controllersPath, routeInfo.controllerName);
+
+        if (controllerPath === 'Controller not found') {
+            vscode.window.showErrorMessage(`Controller ${routeInfo.controllerName} not found.`);
+            return;
+        }
+
+        const methodLine = await findMethodLineNumber(controllerPath, routeInfo.methodName);
+        if (methodLine === -1) {
+            vscode.window.showErrorMessage(`Method ${routeInfo.methodName} not found in controller.`);
+            return;
+        }
+
+        // Open the controller file and navigate to the method
+        const document = await vscode.workspace.openTextDocument(controllerPath);
+        const editorInstance = await vscode.window.showTextDocument(document);
+
+        const position = new vscode.Position(methodLine - 1, 0);
+        editorInstance.selection = new vscode.Selection(position, position);
+        editorInstance.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+    });
+
+    context.subscriptions.push(disposable, goToControllerCommand);
 }
 
 interface RouteInfo {
@@ -41,13 +93,14 @@ interface RouteInfo {
     controllerMethod: string | null;
 }
 
+// Search for a controller file in the specified directory
 function findControllerFile(controllersPath: string, controllerName: string): string {
     const controllerFile = `${controllerName}.php`;
     const results: string[] = [];
 
     function searchDir(dirPath: string) {
         const files = fs.readdirSync(dirPath);
-        
+
         for (const file of files) {
             const filePath = path.join(dirPath, file);
             const stat = fs.statSync(filePath);
@@ -64,6 +117,7 @@ function findControllerFile(controllersPath: string, controllerName: string): st
     return results[0] || 'Controller not found';
 }
 
+// Find the method that is associated with the controller file
 function findControllerMethod(controllerPath: string, methodName: string): string | null {
     if (!fs.existsSync(controllerPath) || controllerPath === 'Controller not found') {
         return null;
@@ -71,17 +125,17 @@ function findControllerMethod(controllerPath: string, methodName: string): strin
 
     const content = fs.readFileSync(controllerPath, 'utf-8');
     const methodRegex = new RegExp(`function\\s+${methodName}\\s*\\([^)]*\\)\\s*{`, 'i');
-    
     const match = content.match(methodRegex);
+
     if (match) {
-        // Get the line number of the method
         const lines = content.slice(0, match.index).split('\n');
         return `Line ${lines.length}`;
     }
-    
+
     return null;
 }
 
+// Search for Laravel routes and map them to controller methods
 function findLaravelRoutesToController(routesPath: string, controllersPath: string): RouteInfo[] {
     const routes: RouteInfo[] = [];
     const routeFiles = fs.readdirSync(routesPath).filter(file => file.endsWith('.php'));
@@ -89,10 +143,9 @@ function findLaravelRoutesToController(routesPath: string, controllersPath: stri
     for (const file of routeFiles) {
         const filePath = path.join(routesPath, file);
         const content = fs.readFileSync(filePath, 'utf-8');
-        
-        // Regular expression to match Laravel routes
+
         const routeRegex = /Route::(get|post|put|delete)\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^@'"]+)@([^'"]+)['"]\s*\)(?:->name\(['"]([^'"]+)['"]\))?/g;
-        
+
         let match;
         while ((match = routeRegex.exec(content)) !== null) {
             const controllerName = match[3];
@@ -102,11 +155,11 @@ function findLaravelRoutesToController(routesPath: string, controllersPath: stri
 
             routes.push({
                 routeName: match[5] || match[2],
-                controllerName: controllerName,
-                methodName: methodName,
+                controllerName,
+                methodName,
                 routeFilePath: filePath,
-                controllerFilePath: controllerFilePath,
-                controllerMethod: controllerMethod
+                controllerFilePath,
+                controllerMethod
             });
         }
     }
@@ -114,6 +167,45 @@ function findLaravelRoutesToController(routesPath: string, controllersPath: stri
     return routes;
 }
 
+// Checking if the file is a Laravel route file
+function isRouteFile(filePath: string): boolean {
+    return filePath.includes(path.sep + 'routes' + path.sep) && filePath.endsWith('.php');
+}
+
+// Parsing the current line in the route file to extract the controller and method
+function parseRouteLine(line: string): { controllerName: string, methodName: string } | null {
+    const routeRegex = /Route::(get|post|put|delete)\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^@'"]+)@([^'"]+)['"]\s*\)/;
+    const match = line.match(routeRegex);
+
+    if (match) {
+        return {
+            controllerName: match[3],
+            methodName: match[4]
+        };
+    }
+
+    return null;
+}
+
+// Find the line number where the method is located in the controller file
+async function findMethodLineNumber(filePath: string, methodName: string): Promise<number> {
+    try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const lines = content.split('\n');
+        const methodRegex = new RegExp(`function\\s+${methodName}\\s*\\(`);
+
+        for (let i = 0; i < lines.length; i++) {
+            if (methodRegex.test(lines[i])) {
+                return i + 1; // Convert to 1-based line number
+            }
+        }
+        return -1;
+    } catch (error) {
+        return -1;
+    }
+}
+
+// Display the Laravel routes and their corresponding controllers in a webview
 function displayRoutes(routes: RouteInfo[]) {
     const panel = vscode.window.createWebviewPanel(
         'laravelRoutes',
